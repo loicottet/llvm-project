@@ -813,8 +813,10 @@ EmitMachineNode(SDNode *Node, bool IsClone, bool IsCloned,
   unsigned NumDefs = II.getNumDefs();
   const MCPhysReg *ScratchRegs = nullptr;
 
-  // Handle STACKMAP and PATCHPOINT specially and then use the generic code.
-  if (Opc == TargetOpcode::STACKMAP || Opc == TargetOpcode::PATCHPOINT) {
+  // Handle STACKMAP, PATCHPOINT and STATEPOINT specially and then use the
+  // generic code.
+  if (Opc == TargetOpcode::STACKMAP || Opc == TargetOpcode::PATCHPOINT ||
+      Opc == TargetOpcode::STATEPOINT) {
     // Stackmaps do not have arguments and do not preserve their calling
     // convention. However, to simplify runtime support, they clobber the same
     // scratch registers as AnyRegCC.
@@ -822,6 +824,10 @@ EmitMachineNode(SDNode *Node, bool IsClone, bool IsCloned,
     if (Opc == TargetOpcode::PATCHPOINT) {
       CC = Node->getConstantOperandVal(PatchPointOpers::CCPos);
       NumDefs = NumResults;
+      // } else if (Opc == TargetOpcode::STATEPOINT) {
+      //   CC = Node->getConstantOperandVal(
+      //     Node->getConstantOperandVal(StatepointOpers::NCallArgsPos) +
+      //     StatepointOpers::MetaEnd + StatepointOpers::CCOffset);
     }
     ScratchRegs = TLI->getScratchRegisters((CallingConv::ID) CC);
   }

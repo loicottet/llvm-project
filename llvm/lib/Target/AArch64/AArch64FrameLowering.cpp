@@ -2221,17 +2221,23 @@ void AArch64FrameLowering::processFunctionBeforeFrameFinalized(
       .addImm(0);
 }
 
-/// For Win64 AArch64 EH, the offset to the Unwind object is from the SP before
-/// the update.  This is easily retrieved as it is exactly the offset that is set
-/// in processFunctionBeforeFrameFinalized.
 int AArch64FrameLowering::getFrameIndexReferencePreferSP(
     const MachineFunction &MF, int FI, unsigned &FrameReg,
     bool IgnoreSPUpdates) const {
-  const MachineFrameInfo &MFI = MF.getFrameInfo();
-  LLVM_DEBUG(dbgs() << "Offset from the SP for " << FI << " is "
-                    << MFI.getObjectOffset(FI) << "\n");
-  FrameReg = AArch64::SP;
-  return MFI.getObjectOffset(FI);
+  if (IgnoreSPUpdates) {
+    /// For Win64 AArch64 EH, the offset to the Unwind object is from the SP
+    /// before the update.  This is easily retrieved as it is exactly the offset
+    /// that is set in processFunctionBeforeFrameFinalized.
+    const MachineFrameInfo &MFI = MF.getFrameInfo();
+    LLVM_DEBUG(dbgs() << "Offset from the SP for " << FI << " is "
+                      << MFI.getObjectOffset(FI) << "\n");
+    FrameReg = AArch64::SP;
+    return MFI.getObjectOffset(FI);
+  } else {
+    return resolveFrameIndexReference(MF, FI, FrameReg,
+                                      /*PreferFP=*/false, /*ForSimm=*/false)
+        .getBytes();
+  }
 }
 
 /// The parent frame offset (aka dispFrame) is only used on X86_64 to retrieve
