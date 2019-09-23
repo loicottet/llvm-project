@@ -314,7 +314,7 @@ static bool isGCPointerType(Type *T) {
     // For the sake of this example GC, we arbitrarily pick addrspace(1) as our
     // GC managed heap.  We know that a pointer into this heap needs to be
     // updated and that no other pointer does.
-    return PT->getAddressSpace() == 1;
+    return PT->getAddressSpace() == 1 || PT->getAddressSpace() == 2;
   return false;
 }
 
@@ -1430,7 +1430,15 @@ makeStatepointExplicitImpl(CallBase *Call, /* to replace */
   uint32_t Flags = uint32_t(StatepointFlags::None);
 
   ArrayRef<Use> CallArgs(Call->arg_begin(), Call->arg_end());
-  ArrayRef<Use> DeoptArgs = GetDeoptBundleOperands(Call);
+  assert(GetDeoptBundleOperands(Call).empty() && "Should not see deoptArgs");
+  std::vector<Value *> DeoptArgsVector;
+  for (Value *LiveVal : GCArgs) {
+    if (auto *PT = dyn_cast<PointerType>(LiveVal->getType()))
+      if (PT->getAddressSpace() == 2)
+        DeoptArgsVector.push_back(LiveVal);
+  }
+  ArrayRef<Value *> DeoptArgs(DeoptArgsVector);
+
   ArrayRef<Use> TransitionArgs;
   if (auto TransitionBundle =
           Call->getOperandBundle(LLVMContext::OB_gc_transition)) {

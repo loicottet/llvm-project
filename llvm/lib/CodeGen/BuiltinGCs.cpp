@@ -80,7 +80,7 @@ public:
     // updated and that no other pointer does.  Note that addrspace(1) is used
     // only as an example, it has no special meaning, and is not reserved for
     // GC usage.
-    return (1 == PT->getAddressSpace());
+    return (1 == PT->getAddressSpace() || 2 == PT->getAddressSpace());
   }
 };
 
